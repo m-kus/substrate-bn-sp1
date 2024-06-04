@@ -5,7 +5,7 @@ use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rinv:expr) => {
+    ($name:ident, $modulus:expr, $rinv:expr, $r:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
@@ -19,8 +19,9 @@ macro_rules! field_impl {
 
         impl $name {
             pub fn to_mont(&self) -> U256 {
-                // TODO: mult by r
-                self.0
+                let mut res = self.0;
+                res.mul(&U256::from($r), &Self::modulus());
+                res
             }
 
             pub fn from_mont(mont: &U256) -> Self {
@@ -187,6 +188,12 @@ field_impl!(
         0x90ef5a9e111ec87,
         0xc8260de4aeb85d5d,
         0x15ebf95182c5551c
+    ],
+    [
+        0xac96341c4ffffffb,
+        0x36fc76959f60cd29,
+        0x666ea36f7879462e,
+        0xe0a77c19a07df2f,
     ]
 );
 
@@ -203,6 +210,12 @@ field_impl!(
         0xeb2022850278edf8,
         0xcf63e9cfb74492d9,
         0x2e67157159e5c639
+    ],
+    [
+        0xd35d438dc58f0d9d,
+        0xa78eb28f5c70b3d,
+        0x666ea36f7879462c,
+        0xe0a77c19a07df2f
     ]
 );
 

@@ -48,6 +48,7 @@ impl Fr {
             .map(|x| Fr::new_mul_factor(x))
     }
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
+        // NOTE: serialized in Montgomery form (as in the original bn crate)
         self.0
             .to_mont()
             .to_big_endian(slice)
