@@ -1,6 +1,6 @@
 use core::cmp::Ordering;
-use rand::Rng;
 use crunchy::unroll;
+use rand::Rng;
 
 use byteorder::{BigEndian, ByteOrder};
 
@@ -79,7 +79,7 @@ impl U512 {
         U512(res)
     }
 
-     pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
+    pub fn from_slice(s: &[u8]) -> Result<U512, Error> {
         if s.len() != 64 {
             return Err(Error::InvalidLength {
                 expected: 32,
