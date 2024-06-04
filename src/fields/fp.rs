@@ -246,8 +246,7 @@ impl Fq {
 
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
-    // TODO: change constants instead
-    Fq::from_mont(&U256::from(i))
+    Fq::new(U256::from(i)).unwrap()
 }
 
 #[test]
