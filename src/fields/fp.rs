@@ -5,21 +5,31 @@ use core::ops::{Add, Mul, Neg, Sub};
 use rand::Rng;
 
 macro_rules! field_impl {
-    ($name:ident, $modulus:expr, $rsquared:expr, $rcubed:expr, $one:expr, $inv:expr) => {
+    ($name:ident, $modulus:expr, $rinv:expr) => {
         #[derive(Copy, Clone, PartialEq, Eq, Debug)]
         #[repr(C)]
         pub struct $name(U256);
 
         impl From<$name> for U256 {
             #[inline]
-            fn from(mut a: $name) -> Self {
-                a.0.mul(&U256::one(), &U256::from($modulus), $inv);
-
+            fn from(a: $name) -> Self {
                 a.0
             }
         }
 
         impl $name {
+            pub fn to_mont(&self) -> U256 {
+                // TODO: mult by r
+                self.0
+            }
+
+            pub fn from_mont(mont: &U256) -> Self {
+                let mut res = U256::from($rinv);
+                res.mul(mont, &Self::modulus());
+                Self(res)
+            }
+
+            /// Convert from decimal string
             pub fn from_str(s: &str) -> Option<Self> {
                 let ints: Vec<_> = {
                     let mut acc = Self::zero();
@@ -49,10 +59,8 @@ macro_rules! field_impl {
             }
 
             /// Converts a U256 to an Fp so long as it's below the modulus.
-            pub fn new(mut a: U256) -> Option<Self> {
+            pub fn new(a: U256) -> Option<Self> {
                 if a < U256::from($modulus) {
-                    a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
-
                     Some($name(a))
                 } else {
                     None
@@ -60,8 +68,7 @@ macro_rules! field_impl {
             }
 
             /// Converts a U256 to an Fr regardless of modulus.
-            pub fn new_mul_factor(mut a: U256) -> Self {
-                a.mul(&U256::from($rsquared), &U256::from($modulus), $inv);
+            pub fn new_mul_factor(a: U256) -> Self {
                 $name(a)
             }
 
@@ -79,11 +86,11 @@ macro_rules! field_impl {
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
-                $inv
+                unimplemented!()
             }
 
             pub fn raw(&self) -> &U256 {
-                &self.0
+                unimplemented!()
             }
 
             pub fn set_bit(&mut self, bit: usize, to: bool) {
@@ -99,11 +106,11 @@ macro_rules! field_impl {
 
             #[inline]
             fn one() -> Self {
-                $name(U256::from($one))
+                $name(U256::from([1, 0, 0, 0]))
             }
 
             fn random<R: Rng>(rng: &mut R) -> Self {
-                $name(U256::random(rng, &U256::from($modulus)))
+                $name(U256::random(rng, &Self::modulus()))
             }
 
             #[inline]
@@ -115,10 +122,7 @@ macro_rules! field_impl {
                 if self.is_zero() {
                     None
                 } else {
-                    self.0.invert(&U256::from($modulus));
-                    self.0
-                        .mul(&U256::from($rcubed), &U256::from($modulus), $inv);
-
+                    self.0.invert(&Self::modulus());
                     Some(self)
                 }
             }
@@ -129,7 +133,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn add(mut self, other: $name) -> $name {
-                self.0.add(&other.0, &U256::from($modulus));
+                self.0.add(&other.0, &Self::modulus());
 
                 self
             }
@@ -140,7 +144,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn sub(mut self, other: $name) -> $name {
-                self.0.sub(&other.0, &U256::from($modulus));
+                self.0.sub(&other.0, &Self::modulus());
 
                 self
             }
@@ -151,7 +155,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn mul(mut self, other: $name) -> $name {
-                self.0.mul(&other.0, &U256::from($modulus), $inv);
+                self.0.mul(&other.0, &Self::modulus());
 
                 self
             }
@@ -162,7 +166,7 @@ macro_rules! field_impl {
 
             #[inline]
             fn neg(mut self) -> $name {
-                self.0.neg(&U256::from($modulus));
+                self.0.neg(&Self::modulus());
 
                 self
             }
@@ -179,24 +183,11 @@ field_impl!(
         0x30644e72e131a029
     ],
     [
-        0x1bb8e645ae216da7,
-        0x53fe3ab1e35c59e3,
-        0x8c49833d53bb8085,
-        0x0216d0b17f4e44a5
-    ],
-    [
-        0x5e94d8e1b4bf0040,
-        0x2a489cbe1cfbb6b8,
-        0x893cc664a19fcfed,
-        0x0cf8594b7fcc657c
-    ],
-    [
-        0xac96341c4ffffffb,
-        0x36fc76959f60cd29,
-        0x666ea36f7879462e,
-        0xe0a77c19a07df2f
-    ],
-    0x6586864b4c6911b3c2e1f593efffffff
+        0xdc5ba0056db1194e,
+        0x90ef5a9e111ec87,
+        0xc8260de4aeb85d5d,
+        0x15ebf95182c5551c
+    ]
 );
 
 field_impl!(
@@ -208,24 +199,11 @@ field_impl!(
         0x30644e72e131a029
     ],
     [
-        0xf32cfc5b538afa89,
-        0xb5e71911d44501fb,
-        0x47ab1eff0a417ff6,
-        0x06d89f71cab8351f
-    ],
-    [
-        0xb1cd6dafda1530df,
-        0x62f210e6a7283db6,
-        0xef7f0b0c0ada0afb,
-        0x20fd6e902d592544
-    ],
-    [
-        0xd35d438dc58f0d9d,
-        0xa78eb28f5c70b3d,
-        0x666ea36f7879462c,
-        0xe0a77c19a07df2f
-    ],
-    0x9ede7d651eca6ac987d20782e4866389
+        0xed84884a014afa37,
+        0xeb2022850278edf8,
+        0xcf63e9cfb74492d9,
+        0x2e67157159e5c639
+    ]
 );
 
 lazy_static::lazy_static! {
@@ -268,7 +246,8 @@ impl Fq {
 
 #[inline]
 pub fn const_fq(i: [u64; 4]) -> Fq {
-    Fq(U256::from(i))
+    // TODO: change constants instead
+    Fq::from_mont(&U256::from(i))
 }
 
 #[test]
