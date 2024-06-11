@@ -104,13 +104,13 @@ impl Mul for Fr {
 pub enum FieldError {
     InvalidSliceLength,
     InvalidU512Encoding,
-    FieldNotMember,
+    NotMember,
 }
 
 #[derive(Debug)]
 pub enum CurveError {
     InvalidEncoding,
-    CurveNotMember,
+    NotMember,
     Field(FieldError),
     ToAffineConversion,
 }
@@ -155,7 +155,7 @@ impl Fq {
     pub fn from_slice(slice: &[u8]) -> Result<Self, FieldError> {
         arith::U256::from_slice(slice)
             .map_err(|_| FieldError::InvalidSliceLength) // todo: maybe more sensful error handling
-            .and_then(|x| fields::Fq::new(x).ok_or(FieldError::FieldNotMember))
+            .and_then(|x| fields::Fq::new(x).ok_or(FieldError::NotMember))
             .map(|x| Fq(x))
     }
     pub fn to_big_endian(&self, slice: &mut [u8]) -> Result<(), FieldError> {
@@ -164,7 +164,7 @@ impl Fq {
             .map_err(|_| FieldError::InvalidSliceLength)
     }
     pub fn from_u256(u256: arith::U256) -> Result<Self, FieldError> {
-        Ok(Fq(fields::Fq::new(u256).ok_or(FieldError::FieldNotMember)?))
+        Ok(Fq(fields::Fq::new(u256).ok_or(FieldError::NotMember)?))
     }
     pub fn into_u256(self) -> arith::U256 {
         (self.0).into()
@@ -256,9 +256,8 @@ impl Fq2 {
         let u512 = arith::U512::from_slice(bytes).map_err(|_| FieldError::InvalidU512Encoding)?;
         let (res, c0) = u512.divrem(&Fq::modulus());
         Ok(Fq2::new(
-            Fq::from_u256(c0).map_err(|_| FieldError::FieldNotMember)?,
-            Fq::from_u256(res.ok_or(FieldError::FieldNotMember)?)
-                .map_err(|_| FieldError::FieldNotMember)?,
+            Fq::from_u256(c0).map_err(|_| FieldError::NotMember)?,
+            Fq::from_u256(res.ok_or(FieldError::NotMember)?).map_err(|_| FieldError::NotMember)?,
         ))
     }
 }
@@ -362,7 +361,7 @@ impl G1 {
         let x = fq;
         let y_squared = (fq * fq * fq) + Self::b();
 
-        let mut y = y_squared.sqrt().ok_or(CurveError::CurveNotMember)?;
+        let mut y = y_squared.sqrt().ok_or(CurveError::NotMember)?;
 
         if sign == 2 && y.into_u256().get_bit(0).expect("bit 0 always exist; qed") {
             y = y.neg();
@@ -372,7 +371,7 @@ impl G1 {
             return Err(CurveError::InvalidEncoding);
         }
         AffineG1::new(x, y)
-            .map_err(|_| CurveError::CurveNotMember)
+            .map_err(|_| CurveError::NotMember)
             .map(Into::into)
     }
 }
@@ -514,7 +513,7 @@ impl G2 {
         let x = Fq2::from_slice(&bytes[1..])?;
 
         let y_squared = (x * x * x) + G2::b();
-        let y = y_squared.sqrt().ok_or(CurveError::CurveNotMember)?;
+        let y = y_squared.sqrt().ok_or(CurveError::NotMember)?;
         let y_neg = -y;
 
         let y_gt = y.0.to_u512() > y_neg.0.to_u512();
@@ -536,7 +535,7 @@ impl G2 {
         };
 
         AffineG2::new(x, e_y)
-            .map_err(|_| CurveError::CurveNotMember)
+            .map_err(|_| CurveError::NotMember)
             .map(Into::into)
     }
 }
