@@ -18,13 +18,17 @@ macro_rules! field_impl {
         }
 
         impl $name {
-            pub fn to_mont(&self) -> U256 {
+            #[inline]
+            #[allow(dead_code)]
+            pub(crate) fn to_mont(&self) -> U256 {
                 let mut res = self.0;
                 res.mul(&U256::from($r), &Self::modulus());
                 res
             }
 
-            pub fn from_mont(mont: &U256) -> Self {
+            #[inline]
+            #[allow(dead_code)]
+            pub(crate) fn from_mont(mont: &U256) -> Self {
                 let mut res = U256::from($rinv);
                 res.mul(mont, &Self::modulus());
                 Self(res)
@@ -87,11 +91,13 @@ macro_rules! field_impl {
             #[inline]
             #[allow(dead_code)]
             pub fn inv(&self) -> u128 {
-                unimplemented!()
+                unimplemented!("n' inverse is not used")
             }
 
+            #[inline]
+            #[allow(dead_code)]
             pub fn raw(&self) -> &U256 {
-                unimplemented!()
+                unimplemented!("raw representation is not in Montgomery form")
             }
 
             pub fn set_bit(&mut self, bit: usize, to: bool) {

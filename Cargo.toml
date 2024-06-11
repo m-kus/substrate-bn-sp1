@@ -12,7 +12,6 @@ edition = "2018"
 
 [features]
 default = []
-testing = []
 
 [[bench]]
 name = "api"
